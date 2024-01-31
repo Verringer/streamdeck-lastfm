@@ -1,0 +1,97 @@
+{
+  "Actions": [
+    {
+      "Name": "Now Playing",
+      "UUID": "com.verringer.lastfm.now-playing",
+      "Icon": "images/now-playing.icon",
+      "States": [
+        {
+          "Image": "images/now-playing.key",
+          "TitleAlignment": "middle",
+          "FontSize": "15"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": ""
+    },
+    {
+      "Name": "Launch Page",
+      "UUID": "com.verringer.lastfm.launch-page",
+      "Icon": "images/launch-page.icon",
+      "States": [
+        {
+          "Image": "images/launch-page.key",
+          "TitleAlignment": "middle",
+          "FontSize": "15"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": ""
+    },
+    {
+      "Name": "Top Track",
+      "UUID": "com.verringer.lastfm.top-track",
+      "Icon": "images/top-track.icon",
+      "States": [
+        {
+          "Image": "images/top-track.key",
+          "TitleAlignment": "middle",
+          "FontSize": "15"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": ""
+    },
+    {
+      "Name": "Top Album",
+      "UUID": "com.verringer.lastfm.top-album",
+      "Icon": "images/top-album.icon",
+      "States": [
+        {
+          "Image": "images/top-album.key",
+          "TitleAlignment": "middle",
+          "FontSize": "15"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": ""
+    },
+    {
+      "Name": "Top Artist",
+      "UUID": "com.verringer.lastfm.top-artist",
+      "Icon": "images/top-artist.icon",
+      "States": [
+        {
+          "Image": "images/top-artist.key",
+          "TitleAlignment": "middle",
+          "FontSize": "15"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": ""
+    }
+  ],
+  "SDKVersion": 2,
+  "Author": "Verringer",
+  "CodePath": "plugin.html",
+  "PropertyInspectorPath": "propertyinspector.html",
+  "Name": "Last.fm Integration",
+  "Description": "Access Last.fm from within Stream Deck",
+  "Icon": "images/pluginIcon",
+  "Version": "0.0.0-development",
+  "Category": "Last.fm",
+	"CategoryIcon": "images/pluginIcon",
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.11"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "4.1"
+  }
+}

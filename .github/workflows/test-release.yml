@@ -1,0 +1,27 @@
+name: Release - Test
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+
+jobs:
+  release:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v5
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16
+      - run: yarn install
+      - name: Release Test
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+          NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+        run: yarn semantic-release --dry-run --branches ${{ steps.branch-name.outputs.current_branch }}
