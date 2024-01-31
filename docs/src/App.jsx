@@ -223,8 +223,8 @@ function App() {
       <div className="my-24"></div>
 
       {/* Contribute */}
-      <div className="flex justify-center mb-48">
-        <div className="flex flex-col items-center">
+      <div className="flex justify-center mb-48 px-8">
+        <div className="flex flex-col items-center text-center">
           <h1 class="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl">
             Download
           </h1>
