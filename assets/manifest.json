@@ -81,7 +81,7 @@
   "Version": "0.0.0-development",
   "Category": "Last.fm",
 	"CategoryIcon": "images/pluginIcon",
-  "URL": "https://verringer.github.io/lastfm-streamdeck",
+  "URL": "https://verringer.github.io/streamdeck-lastfm",
   "OS": [
     {
       "Platform": "mac",
