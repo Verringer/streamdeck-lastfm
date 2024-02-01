@@ -20,7 +20,7 @@ At a glance, stay updated on your current playing track, recently played tunes, 
 
 ## Compatibility
 
-This plugin is compatible with all StreamDeck devices and is verified working on MacOS. It should work on Windows, but this is untested as of now.
+This plugin is compatible with all StreamDeck devices and is verified working on MacOS and Windows.
 
 ## Installation
 

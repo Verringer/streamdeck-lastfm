@@ -75,12 +75,13 @@
   "Author": "Verringer",
   "CodePath": "plugin.html",
   "PropertyInspectorPath": "propertyinspector.html",
-  "Name": "Last.fm Integration",
+  "Name": "Last.fm",
   "Description": "Access Last.fm from within Stream Deck",
   "Icon": "images/pluginIcon",
   "Version": "0.0.0-development",
   "Category": "Last.fm",
 	"CategoryIcon": "images/pluginIcon",
+  "URL": "https://verringer.github.io/lastfm-streamdeck",
   "OS": [
     {
       "Platform": "mac",
