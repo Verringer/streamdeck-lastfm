@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.0.2](https://github.com/verringer/streamdeck-lastfm/compare/v1.0.1...v1.0.2) (2024-02-18)
+
+
+### Bug Fixes
+
+* updated icons to match streamdeck guidelines ([60b7796](https://github.com/verringer/streamdeck-lastfm/commit/60b779675b9b9748d2072d56fcaf78a2801ae5e9))
+
 ### [1.0.1](https://github.com/verringer/streamdeck-lastfm/compare/v1.0.0...v1.0.1) (2024-02-01)
 
 
