@@ -249,9 +249,14 @@ function App() {
             </svg>
           </a>
           <div className="my-4"></div>
-          <a href="https://github.com/Verringer/streamdeck-lastfm/releases/latest" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
-            Download Plugin from GitHub
-          </a>
+          <div className="flex gap-8 flex-col md:flex-row">
+            <a href="https://github.com/Verringer/streamdeck-lastfm/releases/latest" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
+              Download from GitHub Releases
+            </a>
+            <a href="https://github.com/Verringer/streamdeck-lastfm/releases/latest" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
+              Download from Elgato Marketplace
+            </a>
+          </div>
         </div>
       </div>
 
