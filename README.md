@@ -4,9 +4,11 @@ Seamlessly integrates Last.fm features into your Elgato StreamDeck, providing yo
 
 [Getting Started](https://verringer.github.io/streamdeck-lastfm/)
 
-[Download From Elgato Marketplace](https://github.com/Verringer/streamdeck-lastfm/releases/latest/download/com.verringer.lastfm.streamDeckPlugin)
+[Download From Elgato Marketplace](https://marketplace.elgato.com/product/stream-deck-lastfm-1c78b0c3-481a-4e1c-a0ee-a2a07b005576)
 
-[Download from GitHub Releases](https://github.com/Verringer/streamdeck-lastfm/releases/latest/download/com.verringer.lastfm.streamDeckPlugin)
+
+[Download from GitHub Releases](https://github.com/Verringer/streamdeck-lastfm/releases/latest)
+[[Direct](https://github.com/Verringer/streamdeck-lastfm/releases/latest/download/com.verringer.lastfm.streamDeckPlugin)]
 
 ## Features
 

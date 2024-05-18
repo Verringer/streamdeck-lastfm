@@ -250,11 +250,11 @@ function App() {
           </a>
           <div className="my-4"></div>
           <div className="flex gap-8 flex-col md:flex-row">
-            <a href="https://github.com/Verringer/streamdeck-lastfm/releases/latest" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
-              Download from GitHub Releases
+            <a href="https://marketplace.elgato.com/product/stream-deck-lastfm-1c78b0c3-481a-4e1c-a0ee-a2a07b005576" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
+              Download from Elgato Marketplace
             </a>
             <a href="https://github.com/Verringer/streamdeck-lastfm/releases/latest" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
-              Download from Elgato Marketplace
+              Download from GitHub Releases
             </a>
           </div>
         </div>
