@@ -86,6 +86,7 @@ These links helped a lot during development, and are worth checking out if you'r
 - [StreamDeck Plugin API](https://docs.elgato.com/sdk/)
 - Remade this design in Xd from @sjoerd_dijkstra (on figma)'s [community template](https://www.figma.com/community/file/1144539638960396016)
 - Thanks to this answer on [StackOverflow](https://stackoverflow.com/questions/55978243/last-fm-api-returns-same-white-star-image-for-all-artists) and [MusicBrainz API](https://musicbrainz.org/doc/MusicBrainz_API) for supplying the artist images (without even needing an API key, awesome!).
+- Thanks to [streamdeck-plugins.com](https://streamdeck-plugins.com) for including this plugin.
 
 ## Documentation Website
 
