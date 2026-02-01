@@ -46,6 +46,21 @@ If you lose your API key, you can find it again on the [this page](https://www.l
 
 If you'd like to have a blank title, you can simply add a space to the title field and the label won't apply.
 
+### Refresh / polling frequency
+
+Each action has a **Refresh Interval** setting. This value is used as the **cache TTL** for that action’s API request:
+
+- **Now Playing**: uses your selected interval as the TTL for `user.getrecenttracks`.
+- **Top Track / Top Artist / Top Album**: uses your selected interval as the TTL for the corresponding `user.gettop*` endpoint.
+
+What that means in practice:
+
+- **One request per unique endpoint + username + period + interval**, no matter how many widgets you have using the same settings.
+- Multiple widgets with the same configuration **share a single cache entry**. Concurrent cache misses are **coalesced** into **one** real API call.
+- If different widgets use **different intervals** or **different settings**, they use different cache keys and therefore separate TTL windows.
+
+The “Refresh Interval” does **not** force continuous calls at that exact cadence — it sets how long cached data stays valid. Calls only happen when the cache expires (or on a manual refresh).
+
 ## Development
 
 Any contributions are welcome, for whatever reason. If you want to add a feature, fix a bug, or just want to play around with the code, feel free to do so - it's all open source for a reason.
