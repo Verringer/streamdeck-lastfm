@@ -113,9 +113,4 @@ You're welcome to use parts of the site for your own projects, but please don't 
 
 There is additional documentation in `docs/README.md` for this.
 
-## Future Plans
-
-- [ ] Configurable onpress actions, such as opening the track, profile, etc... instead of just forced refreshing. In an ideal world - I'd like it to force refresh on hold for x seconds, and configurable for the short press.
-- [ ] Adding playstats for artists to see how many times they've been scrobbled, etc.
-
 Love to hear your ideas, please submit in the issues tab to discuss.

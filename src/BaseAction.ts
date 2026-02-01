@@ -11,6 +11,8 @@ export interface ActionSettings {
   titleDisplay?: string;
   displayPeriod?: string;
   targetPage?: string;
+  shortPressAction?: string;
+  longPressAction?: string;
   gridEnabled?: boolean | string;
   gridSize?: string; // Single N×N grid size
   gridPosition?: number;
@@ -27,17 +29,24 @@ export interface ContextData {
   titleDisplay?: string;
   displayPeriod?: string;
   targetPage?: string;
+  shortPressAction?: string;
+  longPressAction?: string;
   gridEnabled?: boolean;
   gridSize?: number; // Store as number
   gridPosition?: number;
   hasApiKey?: boolean;
   hasUsername?: boolean;
   pollingFrequency?: string;
+  lastTrackName?: string;
+  lastArtistName?: string;
+  lastAlbumName?: string;
 }
 
 export abstract class BaseAction {
   protected contextData: Map<string, ContextData> = new Map();
   private cacheSubscriptions: Map<string, Map<string, (key: string, data: unknown) => void>> = new Map();
+  private pressTimers: Map<string, NodeJS.Timeout> = new Map();
+  private longPressTriggered: Set<string> = new Set();
   protected apiService: LastFmApiService;
   protected imageService: ImageService;
   protected pollingService: PollingService;
@@ -62,11 +71,27 @@ export abstract class BaseAction {
   }
 
   async keyUp(context: string, action: string): Promise<void> {
-    // Default implementation (does nothing)
+    const timer = this.pressTimers.get(context);
+    if (timer) {
+      clearTimeout(timer);
+      this.pressTimers.delete(context);
+    }
+
+    if (this.longPressTriggered.has(context)) {
+      this.longPressTriggered.delete(context);
+      return;
+    }
+
+    await this.executePressAction(context, 'short');
   }
 
   async keyDown(context: string, action: string): Promise<void> {
-    // Default implementation (does nothing)
+    const duration = this.getLongPressDurationMs(context);
+    const timer = setTimeout(async () => {
+      this.longPressTriggered.add(context);
+      await this.executePressAction(context, 'long');
+    }, duration);
+    this.pressTimers.set(context, timer);
   }
 
   async didReceiveSettings({ context, settings }: { context: string; settings: unknown; }): Promise<void> {
@@ -104,6 +129,8 @@ export abstract class BaseAction {
     data.titleDisplay = settings.titleDisplay || 'artist-song';
     data.displayPeriod = settings.displayPeriod || data.displayPeriod;
     data.targetPage = settings.targetPage || data.targetPage;
+    data.shortPressAction = settings.shortPressAction ?? data.shortPressAction ?? 'refresh';
+    data.longPressAction = settings.longPressAction ?? data.longPressAction ?? 'none';
     data.pollingFrequency = settings.pollingFrequency;
     
     // Grid settings with defaults
@@ -365,6 +392,95 @@ export abstract class BaseAction {
 
   protected cleanup(context: string): void {
     this.unregisterCacheUpdates(context);
+    const timer = this.pressTimers.get(context);
+    if (timer) {
+      clearTimeout(timer);
+      this.pressTimers.delete(context);
+    }
+    this.longPressTriggered.delete(context);
     this.contextData.delete(context);
+  }
+
+  protected async executePressAction(context: string, type: 'short' | 'long'): Promise<void> {
+    const data = this.contextData.get(context);
+    const action = type === 'short' ? data?.shortPressAction : data?.longPressAction;
+
+    switch (action) {
+      case 'refresh':
+        await this.handleRefresh(context);
+        this.plugin.showOk(context);
+        break;
+      case 'open-track':
+        this.openLastFmUrl(this.buildTrackUrl(data));
+        break;
+      case 'open-artist':
+        this.openLastFmUrl(this.buildArtistUrl(data));
+        break;
+      case 'open-album':
+        this.openLastFmUrl(this.buildAlbumUrl(data));
+        break;
+      case 'open-profile':
+        this.openLastFmUrl(this.buildProfileUrl(data));
+        break;
+      case 'open-library':
+        this.openLastFmUrl(this.buildLibraryUrl(data));
+        break;
+      case 'open-home':
+        this.openLastFmUrl('https://www.last.fm');
+        break;
+      case 'none':
+      default:
+        break;
+    }
+  }
+
+  protected getLongPressDurationMs(context: string): number {
+    return 600;
+  }
+
+  protected async handleRefresh(context: string): Promise<void> {
+    // Override in subclasses
+  }
+
+  protected openLastFmUrl(url: string): void {
+    if (!url) {
+      return;
+    }
+    this.plugin.openUrl(url);
+  }
+
+  protected buildProfileUrl(data?: ContextData): string {
+    if (!data?.lastFmUsername) {
+      return '';
+    }
+    return `https://www.last.fm/user/${encodeURIComponent(data.lastFmUsername)}`;
+  }
+
+  protected buildLibraryUrl(data?: ContextData): string {
+    if (!data?.lastFmUsername) {
+      return '';
+    }
+    return `https://www.last.fm/user/${encodeURIComponent(data.lastFmUsername)}/library`;
+  }
+
+  protected buildArtistUrl(data?: ContextData): string {
+    if (!data?.lastArtistName) {
+      return '';
+    }
+    return `https://www.last.fm/music/${encodeURIComponent(data.lastArtistName)}`;
+  }
+
+  protected buildAlbumUrl(data?: ContextData): string {
+    if (!data?.lastArtistName || !data?.lastAlbumName) {
+      return '';
+    }
+    return `https://www.last.fm/music/${encodeURIComponent(data.lastArtistName)}/${encodeURIComponent(data.lastAlbumName)}`;
+  }
+
+  protected buildTrackUrl(data?: ContextData): string {
+    if (!data?.lastArtistName || !data?.lastTrackName) {
+      return '';
+    }
+    return `https://www.last.fm/music/${encodeURIComponent(data.lastArtistName)}/_/${encodeURIComponent(data.lastTrackName)}`;
   }
 }

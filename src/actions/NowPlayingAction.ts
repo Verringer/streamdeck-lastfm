@@ -21,23 +21,18 @@ export class NowPlayingAction extends BaseAction {
 		this.registerCacheUpdatesIfReady(context);
 	}
 
-	async keyUp(context: string, action: string) {
-	}
-
-	async keyDown(context: string, action: string) {
+	protected async handleRefresh(context: string): Promise<void> {
 		// Check manual refresh cooldown
 		const now = Date.now();
 		const timeSinceLastRefresh = now - NowPlayingAction.lastManualRefresh;
 		
 		if (timeSinceLastRefresh < NowPlayingAction.MANUAL_REFRESH_COOLDOWN) {
-			this.plugin.showOk(context);
 			return;
 		}
 		
 		NowPlayingAction.lastManualRefresh = now;
 		
 		await this.refreshAllWidgets(context);
-		this.plugin.showOk(context);
 	}
 
 	private async refreshAllWidgets(context: string): Promise<void> {
@@ -124,6 +119,10 @@ export class NowPlayingAction extends BaseAction {
 			
 
 			if (track) {
+				data.lastTrackName = track.name || '';
+				data.lastArtistName = track.artist?.['#text'] || '';
+				data.lastAlbumName = track.album?.['#text'] || '';
+
 				if (this.shouldUpdateGrid(context)) {
 					await this.updateGridDisplay(context, track, `${track.name} - ${track.artist['#text']}`);
 				} else {

@@ -11,6 +11,10 @@ export interface PiConfig {
   pollingFrequencyOptions?: Array<{ label: string; value: string }>;
   includeGridOptions?: boolean;
   includeRefreshModal?: boolean;
+  includePressActions?: boolean;
+  pressActionOptions?: Array<{ label: string; value: string }>;
+  shortPressDefault?: string;
+  longPressDefault?: string;
 }
 
 const DEFAULT_CONFIG: PiConfig = {
@@ -18,7 +22,8 @@ const DEFAULT_CONFIG: PiConfig = {
   includeDisplayPeriod: false,
   pollingFrequencyUnit: 'minutes',
   pollingFrequencyDefault: 30,
-  includeRefreshModal: false
+  includeRefreshModal: false,
+  includePressActions: false
 };
 
 const TITLE_DISPLAY_OPTIONS = {
@@ -77,7 +82,7 @@ class PropertyInspectorService {
   private static instance: PropertyInspectorService;
   private settingsMap: Map<string, any> = new Map();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): PropertyInspectorService {
     if (!PropertyInspectorService.instance) {
@@ -91,12 +96,12 @@ class PropertyInspectorService {
     explanationEl.style.marginBottom = '10px';
     explanationEl.style.marginLeft = '110px';
     explanationEl.textContent = 'You can get your API key from ';
-    
+
     const link = document.createElement('a');
     link.href = 'https://www.last.fm/api/account/create';
     link.textContent = 'here';
     link.target = '_blank';
-    
+
     explanationEl.appendChild(link);
     return explanationEl;
   }
@@ -116,7 +121,7 @@ class PropertyInspectorService {
     config: PiConfig = {}
   ): FormBuilder<any> {
     const finalConfig = { ...DEFAULT_CONFIG, ...config };
-    
+
     // Get or create context settings
     let contextSettings = this.settingsMap.get(pluginContext);
     if (!contextSettings) {
@@ -124,7 +129,14 @@ class PropertyInspectorService {
         titleDisplay: finalConfig.titleDisplay,
         lastfmApiKey: '',
         lastfmUsername: '',
-        pollingFrequency: finalConfig.pollingFrequencyDefault?.toString()
+        pollingFrequency: finalConfig.pollingFrequencyDefault?.toString(),
+        shortPressAction: finalConfig.shortPressDefault,
+        longPressAction: finalConfig.longPressDefault
+      };
+      contextSettings = {
+        shortPressAction: finalConfig.shortPressDefault,
+        longPressAction: finalConfig.longPressDefault,
+        ...contextSettings
       };
       this.settingsMap.set(pluginContext, contextSettings);
     }
@@ -142,9 +154,9 @@ class PropertyInspectorService {
     }
 
     // Add title display dropdown
-    const titleOptions = finalConfig.titleDisplayOptions || 
+    const titleOptions = finalConfig.titleDisplayOptions ||
       TITLE_DISPLAY_OPTIONS.nowPlaying;
-    
+
     const titleDropdown = builder.createDropdown();
     titleOptions.forEach(option => {
       titleDropdown.addOption(option.label, option.value);
@@ -152,10 +164,20 @@ class PropertyInspectorService {
     titleDropdown.setLabel('Label');
     builder.addElement('titleDisplay', titleDropdown);
 
+    const titleHint = document.createElement('div');
+    titleHint.style.marginBottom = '10px';
+    titleHint.style.marginLeft = '110px';
+    titleHint.style.fontSize = '12px';
+
+    // Use innerHTML instead of textContent
+    titleHint.innerHTML = 'Set <b>Title</b> to a space character to hide label.';
+
+    builder.addHtmlElement(titleHint);
+
     // Add grid options if enabled
     if (finalConfig.includeGridOptions) {
       // Grid enable toggle - using a dropdown with yes/no for now since checkbox might not be supported
-      builder.addElement('gridEnabled', 
+      builder.addElement('gridEnabled',
         builder.createDropdown()
           .addOption('Disabled', 'false')
           .addOption('Enabled', 'true')
@@ -163,7 +185,7 @@ class PropertyInspectorService {
       );
 
       // Grid size input (square grid for square album art)
-      builder.addElement('gridSize', 
+      builder.addElement('gridSize',
         builder.createInput()
           .setLabel('Grid Size')
           .showOn(() => {
@@ -175,9 +197,9 @@ class PropertyInspectorService {
       // Grid position inputs (separate X and Y)
       const gridSize = builder.getFormData().gridSize || '3';
       const size = parseInt(gridSize);
-      
+
       // Grid Position X (Column)
-      builder.addElement('gridPositionX', 
+      builder.addElement('gridPositionX',
         builder.createInput()
           .setLabel('Grid Position X (Column)')
           .showOn(() => {
@@ -187,7 +209,7 @@ class PropertyInspectorService {
       );
 
       // Grid Position Y (Row)
-      builder.addElement('gridPositionY', 
+      builder.addElement('gridPositionY',
         builder.createInput()
           .setLabel('Grid Position Y (Row)')
           .showOn(() => {
@@ -205,7 +227,7 @@ class PropertyInspectorService {
       helperTextEl.textContent = GridService.getHelperText(size);
       helperTextEl.style.display = 'none';
       builder.addHtmlElement(helperTextEl);
-      
+
       // Show helper text when grid is enabled
       builder.on('change-settings', () => {
         const formData = builder.getFormData();
@@ -221,20 +243,20 @@ class PropertyInspectorService {
     }
 
     // Add API key input
-    builder.addElement('lastfmApiKey', 
+    builder.addElement('lastfmApiKey',
       builder.createInput().setLabel('API Key').setPlaceholder('abc')
     );
     builder.addHtmlElement(this.createApiKeyExplanation());
 
     // Add username input
-    builder.addElement('lastfmUsername', 
+    builder.addElement('lastfmUsername',
       builder.createInput().setLabel('Username').setPlaceholder('Verringer')
     );
 
     // Add polling frequency dropdown
-    const pollingOptions = finalConfig.pollingFrequencyOptions || 
+    const pollingOptions = finalConfig.pollingFrequencyOptions ||
       POLLING_FREQUENCY_OPTIONS[finalConfig.pollingFrequencyUnit || 'minutes'];
-    
+
     const pollingDropdown = builder.createDropdown();
     pollingOptions.forEach(option => {
       pollingDropdown.addOption(option.label, option.value);
@@ -242,6 +264,27 @@ class PropertyInspectorService {
     pollingDropdown.setLabel('Refresh Interval');
     builder.addElement('pollingFrequency', pollingDropdown);
     builder.addHtmlElement(this.createPollingExplanation());
+
+    if (finalConfig.includePressActions) {
+      const pressOptions = finalConfig.pressActionOptions || [];
+      const shortPressDropdown = builder.createDropdown();
+      pressOptions.forEach(option => shortPressDropdown.addOption(option.label, option.value));
+      shortPressDropdown.setLabel('Short Press');
+      builder.addElement('shortPressAction', shortPressDropdown);
+
+      const longPressDropdown = builder.createDropdown();
+      pressOptions.forEach(option => longPressDropdown.addOption(option.label, option.value));
+      longPressDropdown.setLabel('Long Press');
+      builder.addElement('longPressAction', longPressDropdown);
+
+      const longPressHint = document.createElement('div');
+      longPressHint.style.marginBottom = '10px';
+      longPressHint.style.marginLeft = '110px';
+      longPressHint.style.fontSize = '12px';
+      longPressHint.style.color = '#666';
+      longPressHint.textContent = 'Long press triggers after 0.6 seconds.';
+      builder.addHtmlElement(longPressHint);
+    }
 
     // Append to DOM
     builder.appendTo(document.querySelector('.sdpi-wrapper') ?? document.body);

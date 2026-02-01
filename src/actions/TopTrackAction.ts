@@ -40,6 +40,9 @@ export class TopTrackAction extends BaseTopAction {
 			const title = this.formatTitle(track, data.titleDisplay || 'song');
 
 			this.plugin.setTitle(title, context);
+			data.lastTrackName = track.name || '';
+			data.lastArtistName = track.artist?.name || track.artist?.['#text'] || '';
+			data.lastAlbumName = '';
 
 			// Get track info for album image
 			const trackInfoKey = this.generateCacheKey('track.getinfo', { 

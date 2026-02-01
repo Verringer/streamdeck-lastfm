@@ -40,6 +40,9 @@ export class TopAlbumAction extends BaseTopAction {
 			const title = this.formatTitle(album, data.titleDisplay || 'album');
 
 			this.plugin.setTitle(title, context);
+			data.lastAlbumName = album.name || '';
+			data.lastArtistName = album.artist?.name || album.artist?.['#text'] || '';
+			data.lastTrackName = '';
 
 			const imageUrl = album.image[3]['#text'];
 			if (imageUrl) {

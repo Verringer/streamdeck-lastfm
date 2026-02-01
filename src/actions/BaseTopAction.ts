@@ -12,9 +12,8 @@ export abstract class BaseTopAction extends BaseAction {
     console.log(`Top Action widget appeared: ${context}`);
   }
 
-  async keyDown(context: string, action: string) {
+  protected async handleRefresh(context: string): Promise<void> {
     await this.updateInfo(context);
-    this.plugin.showOk(context);
   }
 
   protected abstract updateInfo(context: string): Promise<void>;

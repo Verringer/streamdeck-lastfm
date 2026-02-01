@@ -40,6 +40,9 @@ export class TopArtistAction extends BaseTopAction {
 			const title = this.formatTitle(artist, data.titleDisplay || 'artist');
 
 			this.plugin.setTitle(title, context);
+			data.lastArtistName = artist.name || '';
+			data.lastAlbumName = '';
+			data.lastTrackName = '';
 
 			// Get artist image using MusicBrainz
 			let imageUrl = '';
