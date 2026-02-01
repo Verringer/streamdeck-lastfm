@@ -8,18 +8,10 @@ interface LastFmResponse<T> {
   error?: LastFmApiError;
 }
 
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
-
 class LastFmApiService {
   private static instance: LastFmApiService;
-  private cache: Map<string, CacheEntry<any>> = new Map();
   private rateLimiter: Map<string, number[]> = new Map();
   private readonly MAX_REQUESTS_PER_MINUTE = 60;
-  private readonly DEFAULT_CACHE_TTL = 60000; // Increased to 60 seconds for better caching
 
   private constructor() {}
 
@@ -47,45 +39,13 @@ class LastFmApiService {
     this.rateLimiter.set(apiKey, requests);
   }
 
-  private getCacheKey(method: string, params: Record<string, string>): string {
-    return `${method}:${JSON.stringify(params)}`;
-  }
-
-  private getFromCache<T>(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return entry.data;
-  }
-
-  private setCache<T>(key: string, data: T, ttl: number = this.DEFAULT_CACHE_TTL): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl
-    });
-  }
-
   private async makeRequest<T>(
     method: string,
     params: Record<string, string>,
-    apiKey: string,
-    cacheTTL?: number
+    apiKey: string
   ): Promise<LastFmResponse<T>> {
     try {
       await this.checkRateLimit(apiKey);
-      
-      const cacheKey = this.getCacheKey(method, params);
-      const cachedData = this.getFromCache<T>(cacheKey);
-      
-      if (cachedData) {
-        return { data: cachedData };
-      }
 
       const url = new URL('https://ws.audioscrobbler.com/2.0/');
       url.searchParams.set('method', method);
@@ -100,6 +60,8 @@ class LastFmApiService {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
       try {
+        this.logRequest('Last.fm', method);
+
         const response = await fetch(url.toString(), {
           signal: controller.signal,
           headers: {
@@ -119,7 +81,6 @@ class LastFmApiService {
           return { error: data as LastFmApiError };
         }
 
-        this.setCache(cacheKey, data, cacheTTL);
         return { data };
 
       } catch (fetchError: unknown) {
@@ -138,30 +99,32 @@ class LastFmApiService {
   }
 
   async getRecentTracks(username: string, apiKey: string): Promise<LastFmResponse<any>> {
-    return this.makeRequest('user.getrecenttracks', { user: username }, apiKey, 30000); // 30 second cache
+    return this.makeRequest('user.getrecenttracks', { user: username }, apiKey);
   }
 
   async getTopTracks(username: string, period: string, apiKey: string): Promise<LastFmResponse<any>> {
-    return this.makeRequest('user.gettoptracks', { user: username, period }, apiKey, 300000); // 5 minute cache
+    return this.makeRequest('user.gettoptracks', { user: username, period }, apiKey);
   }
 
   async getTopArtists(username: string, period: string, apiKey: string): Promise<LastFmResponse<any>> {
-    return this.makeRequest('user.gettopartists', { user: username, period }, apiKey, 300000); // 5 minute cache
+    return this.makeRequest('user.gettopartists', { user: username, period }, apiKey);
   }
 
   async getTopAlbums(username: string, period: string, apiKey: string): Promise<LastFmResponse<any>> {
-    return this.makeRequest('user.gettopalbums', { user: username, period }, apiKey, 300000); // 5 minute cache
+    return this.makeRequest('user.gettopalbums', { user: username, period }, apiKey);
   }
 
   async getTrackInfo(artist: string, track: string, apiKey: string): Promise<LastFmResponse<any>> {
     return this.makeRequest('track.getinfo', { 
       artist: encodeURIComponent(artist), 
       track: encodeURIComponent(track) 
-    }, apiKey, 600000); // 10 minute cache
+    }, apiKey);
   }
 
   async searchMusicBrainzArtist(artistName: string): Promise<any> {
     try {
+      this.logRequest('MusicBrainz', 'searchArtist');
+
       const response = await fetch(
         `https://musicbrainz.org/ws/2/artist?query=${encodeURIComponent(artistName)}&fmt=json`,
         {
@@ -184,6 +147,8 @@ class LastFmApiService {
 
   async getMusicBrainzArtistImage(mbid: string): Promise<string> {
     try {
+      this.logRequest('MusicBrainz', 'artistImage');
+
       const response = await fetch(
         `https://musicbrainz.org/ws/2/artist/${mbid}?inc=url-rels&fmt=json`,
         {
@@ -224,15 +189,15 @@ class LastFmApiService {
     }
   }
 
-  clearCache(): void {
-    this.cache.clear();
-  }
+  clearCache(): void {}
 
   getCacheStats(): { size: number; keys: string[] } {
-    return {
-      size: this.cache.size,
-      keys: Array.from(this.cache.keys())
-    };
+    return { size: 0, keys: [] };
+  }
+
+  private logRequest(service: 'Last.fm' | 'MusicBrainz', endpoint: string): void {
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`🛰️ Request -> ${service}.${endpoint} @ ${timestamp}`);
   }
 }
 

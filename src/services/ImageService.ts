@@ -54,11 +54,9 @@ class ImageService {
   private async getOriginalImageData(url: string): Promise<string> {
     // Check shared cache first
     if (ImageService.sharedImageData.has(url)) {
-      console.log('🎯 Using shared original image data for:', url);
       return ImageService.sharedImageData.get(url)!;
     }
 
-    console.log('📡 Fetching original image data for:', url);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -121,7 +119,6 @@ class ImageService {
     
     const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      console.log('🎯 Using cached image for:', cacheKey);
       return cached.dataUrl;
     }
 
@@ -143,12 +140,11 @@ class ImageService {
         timestamp: Date.now()
       });
 
-      console.log('💾 Cached image for:', cacheKey);
       return processedDataUrl;
     } catch (error) {
       // Don't log 404 errors as loudly - they're common for missing album art
       if (error instanceof Error && error.message.includes('404')) {
-        console.warn('🖼️ Image not found (404):', url);
+      console.warn('🖼️ Image not found (404):', url);
       } else {
         console.error('Failed to fetch image:', url, error);
       }
@@ -163,7 +159,6 @@ class ImageService {
     }
 
     try {
-      console.log('🖼️ Processing grid image:', { gridSize, position });
       const image = await loadImage(dataUrl);
       
       // Parse grid size (e.g., "2x2" -> 2, "3x3" -> 3)
@@ -173,16 +168,6 @@ class ImageService {
       const { x, y } = GridService.positionToXY(position, size);
       const row0 = y - 1; // Convert back to 0-based
       const col0 = x - 1; // Convert back to 0-based
-      
-      console.log('📐 Grid calculated:', { 
-        size,
-        row: row0, 
-        col: col0, 
-        position, 
-        imageWidth: image.width, 
-        imageHeight: image.height,
-        debug: `Position ${position} = Row ${y} (0-based: ${row0}), Col ${x} (0-based: ${col0}) in ${size}x${size} grid`
-      });
       
       // Each StreamDeck button is 144x144, but we want to show a portion of the full image
       const cellSize = 144;
@@ -198,14 +183,6 @@ class ImageService {
       const sourceX = col0 * sourceWidth;
       const sourceY = row0 * sourceHeight;
       
-      console.log('🎯 Source rectangle:', { 
-        sourceX, 
-        sourceY, 
-        sourceWidth, 
-        sourceHeight,
-        calculation: `Col ${col0} × ${sourceWidth} = ${sourceX}, Row ${row0} × ${sourceHeight} = ${sourceY}`
-      });
-      
       // Draw the corresponding portion of the image to fill the 144x144 cell
       ctx.drawImage(
         image,
@@ -213,9 +190,7 @@ class ImageService {
         0, 0, cellSize, cellSize                     // Destination (full button)
       );
 
-      const result = canvas.toDataURL('image/png');
-      console.log('✅ Grid image processed successfully for position', position);
-      return result;
+      return canvas.toDataURL('image/png');
     } catch (error) {
       console.error('Failed to process grid image:', error);
       return dataUrl;

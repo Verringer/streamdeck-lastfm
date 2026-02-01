@@ -16,10 +16,16 @@ export class TopAlbumAction extends BaseTopAction {
 		}
 
 		try {
-			const response = await this.apiService.getTopAlbums(
-				data.lastFmUsername!,
-				data.displayPeriod || 'overall',
-				data.lastFmApiKey!
+			const period = data.displayPeriod || 'overall';
+			const topAlbumsKey = this.generateCacheKey('user.gettopalbums', { 
+				user: data.lastFmUsername!, 
+				period 
+			});
+
+			const response = await this.getCachedData(
+				topAlbumsKey,
+				() => this.apiService.getTopAlbums(data.lastFmUsername!, period, data.lastFmApiKey!),
+				this.getPollingTtlMs(data, 1800)
 			);
 
 			if (response.error) {
@@ -27,7 +33,10 @@ export class TopAlbumAction extends BaseTopAction {
 				return;
 			}
 
-			const album = response.data.topalbums.album[0];
+			const album = response.data.topalbums?.album?.[0];
+			if (!album) {
+				return;
+			}
 			const title = this.formatTitle(album, data.titleDisplay || 'album');
 
 			this.plugin.setTitle(title, context);

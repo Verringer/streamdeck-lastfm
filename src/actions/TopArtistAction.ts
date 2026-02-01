@@ -16,10 +16,16 @@ export class TopArtistAction extends BaseTopAction {
 		}
 
 		try {
-			const response = await this.apiService.getTopArtists(
-				data.lastFmUsername!,
-				data.displayPeriod || 'overall',
-				data.lastFmApiKey!
+			const period = data.displayPeriod || 'overall';
+			const topArtistsKey = this.generateCacheKey('user.gettopartists', { 
+				user: data.lastFmUsername!, 
+				period 
+			});
+
+			const response = await this.getCachedData(
+				topArtistsKey,
+				() => this.apiService.getTopArtists(data.lastFmUsername!, period, data.lastFmApiKey!),
+				this.getPollingTtlMs(data, 1800)
 			);
 
 			if (response.error) {
@@ -27,7 +33,10 @@ export class TopArtistAction extends BaseTopAction {
 				return;
 			}
 
-			const artist = response.data.topartists.artist[0];
+			const artist = response.data.topartists?.artist?.[0];
+			if (!artist) {
+				return;
+			}
 			const title = this.formatTitle(artist, data.titleDisplay || 'artist');
 
 			this.plugin.setTitle(title, context);
@@ -36,15 +45,25 @@ export class TopArtistAction extends BaseTopAction {
 			let imageUrl = '';
 			let mbid = artist.mbid;
 
-			if (!mbid) {
-				const mbArtist = await this.apiService.searchMusicBrainzArtist(artist.name);
+			if (!mbid && artist.name) {
+				const mbSearchKey = this.generateCacheKey('musicbrainz.searchArtist', { artist: artist.name });
+				const mbArtist = await this.getCachedData(
+					mbSearchKey,
+					() => this.apiService.searchMusicBrainzArtist(artist.name),
+					86400000
+				);
 				if (mbArtist) {
 					mbid = mbArtist.id;
 				}
 			}
 
 			if (mbid) {
-				imageUrl = await this.apiService.getMusicBrainzArtistImage(mbid);
+				const mbImageKey = this.generateCacheKey('musicbrainz.artistImage', { mbid });
+				imageUrl = await this.getCachedData(
+					mbImageKey,
+					() => this.apiService.getMusicBrainzArtistImage(mbid),
+					86400000
+				);
 			}
 
 			if (imageUrl) {

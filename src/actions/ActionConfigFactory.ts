@@ -20,7 +20,7 @@ export const createTopActionConfig = (titleDisplayOptions: any, titleDisplay: st
   includeDisplayPeriod: true,
   titleDisplayOptions,
   pollingFrequencyUnit: 'minutes' as const,
-  pollingFrequencyDefault: 30,
+  pollingFrequencyDefault: 1800,
   pollingFrequencyOptions: [
     { label: '5 minutes', value: '300' },
     { label: '10 minutes', value: '600' },

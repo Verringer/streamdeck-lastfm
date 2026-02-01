@@ -18,9 +18,10 @@ class CacheService {
   private static instance: CacheService;
   private cache: Map<string, CacheEntry<any>> = new Map();
   private refreshIntervals: Map<string, NodeJS.Timeout> = new Map();
-  private apiService: any;
+  private refreshConfigs: Map<string, { ttl: number; interval: number }> = new Map();
   private updateCallbacks: Map<string, CacheUpdateCallback<any>[]> = new Map();
   private updateTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  private inFlight: Map<string, Promise<any>> = new Map();
   
   private readonly CACHE_CONFIG: CacheConfig = {
     recentTracks: 8000,    // 8 seconds default TTL (will be overridden by user setting)
@@ -39,10 +40,6 @@ class CacheService {
       CacheService.instance = new CacheService();
     }
     return CacheService.instance;
-  }
-
-  setApiService(apiService: any): void {
-    this.apiService = apiService;
   }
 
   /**
@@ -67,6 +64,12 @@ class CacheService {
       }
       if (callbacks.length === 0) {
         this.updateCallbacks.delete(key);
+        const timeout = this.updateTimeouts.get(key);
+        if (timeout) {
+          clearTimeout(timeout);
+          this.updateTimeouts.delete(key);
+        }
+        this.stopBackgroundRefresh(key);
       }
     }
   }
@@ -112,19 +115,30 @@ class CacheService {
     const cached = this.getFromCache<T>(key);
     
     if (cached) {
-      const cacheEntry = this.cache.get(key) as CacheEntry<T>;
       // Start background refresh even on cache hit to ensure it's running
       this.startBackgroundRefresh(key, fetchFn, cacheTtl);
       return cached;
     }
 
-    const data = await fetchFn();
-    this.setCache(key, data, cacheTtl);
-    
-    // Start background refresh if this is a frequently accessed key
-    this.startBackgroundRefresh(key, fetchFn, cacheTtl);
-    
-    return data;
+    const existing = this.inFlight.get(key);
+    if (existing) {
+      return existing as Promise<T>;
+    }
+
+    const inFlightPromise = (async () => {
+      try {
+        const data = await fetchFn();
+        this.setCache(key, data, cacheTtl);
+        // Start background refresh if this is a frequently accessed key
+        this.startBackgroundRefresh(key, fetchFn, cacheTtl);
+        return data;
+      } finally {
+        this.inFlight.delete(key);
+      }
+    })();
+
+    this.inFlight.set(key, inFlightPromise);
+    return inFlightPromise;
   }
 
   /**
@@ -143,22 +157,26 @@ class CacheService {
     fetchFn: () => Promise<T>, 
     ttl: number
   ): void {
-    
-    // Check if we already have a background refresh running for this key
-    if (this.refreshIntervals.has(key)) {
+    if (!this.updateCallbacks.has(key)) {
       return;
     }
 
-    // Clear existing interval for this key (shouldn't exist, but just in case)
+    // Check if we already have a background refresh running for this key
+    const refreshInterval = key.includes('recenttracks') 
+      ? this.CACHE_CHECK_INTERVAL 
+      : Math.max(1000, Math.floor(ttl * 0.75));
+
+    const existingConfig = this.refreshConfigs.get(key);
+    if (existingConfig && existingConfig.ttl === ttl && existingConfig.interval === refreshInterval) {
+      return;
+    }
+
     const existingInterval = this.refreshIntervals.get(key);
     if (existingInterval) {
       clearInterval(existingInterval);
     }
 
     // Set up new refresh interval (check cache every 2s, refresh API based on TTL)
-    const refreshInterval = key.includes('recenttracks') ? this.CACHE_CHECK_INTERVAL : ttl * 0.75;
-    
-    
     const interval = setInterval(async () => {
       try {
         // For recent tracks, check cache every 2s but only refresh API based on TTL
@@ -194,6 +212,7 @@ class CacheService {
     }, refreshInterval);
 
     this.refreshIntervals.set(key, interval);
+    this.refreshConfigs.set(key, { ttl, interval: refreshInterval });
   }
 
   /**
@@ -205,6 +224,7 @@ class CacheService {
       clearInterval(interval);
       this.refreshIntervals.delete(key);
     }
+    this.refreshConfigs.delete(key);
   }
 
   /**
@@ -236,6 +256,10 @@ class CacheService {
     this.cache.clear();
     this.refreshIntervals.forEach(interval => clearInterval(interval));
     this.refreshIntervals.clear();
+    this.refreshConfigs.clear();
+    this.updateTimeouts.forEach(timeout => clearTimeout(timeout));
+    this.updateTimeouts.clear();
+    this.inFlight.clear();
   }
 
   private getFromCache<T>(key: string): T | null {

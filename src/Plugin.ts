@@ -91,6 +91,17 @@ plugin.on('didReceiveSettings', ({ action, context, settings }) => {
   }
 });
 
+plugin.on('willDisappear', ({ context, action }) => {
+  const actionInstance = getActionInstance(action);
+  if (actionInstance) {
+    safeExecute(
+      async () => actionInstance.willDisappear(context),
+      context,
+      action
+    );
+  }
+});
+
 // Global error handlers for uncaught exceptions (browser environment)
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {

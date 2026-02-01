@@ -16,10 +16,16 @@ export class TopTrackAction extends BaseTopAction {
 		}
 
 		try {
-			const response = await this.apiService.getTopTracks(
-				data.lastFmUsername!,
-				data.displayPeriod || 'overall',
-				data.lastFmApiKey!
+			const period = data.displayPeriod || 'overall';
+			const topTracksKey = this.generateCacheKey('user.gettoptracks', { 
+				user: data.lastFmUsername!, 
+				period 
+			});
+
+			const response = await this.getCachedData(
+				topTracksKey,
+				() => this.apiService.getTopTracks(data.lastFmUsername!, period, data.lastFmApiKey!),
+				this.getPollingTtlMs(data, 1800)
 			);
 
 			if (response.error) {
@@ -27,16 +33,24 @@ export class TopTrackAction extends BaseTopAction {
 				return;
 			}
 
-			const track = response.data.toptracks.track[0];
+			const track = response.data.toptracks?.track?.[0];
+			if (!track) {
+				return;
+			}
 			const title = this.formatTitle(track, data.titleDisplay || 'song');
 
 			this.plugin.setTitle(title, context);
 
 			// Get track info for album image
-			const trackResponse = await this.apiService.getTrackInfo(
-				track.artist.name,
-				track.name,
-				data.lastFmApiKey!
+			const trackInfoKey = this.generateCacheKey('track.getinfo', { 
+				artist: track.artist.name, 
+				track: track.name 
+			});
+
+			const trackResponse = await this.getCachedData(
+				trackInfoKey,
+				() => this.apiService.getTrackInfo(track.artist.name, track.name, data.lastFmApiKey!),
+				600000
 			);
 
 			if (trackResponse.error) {

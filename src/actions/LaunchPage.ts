@@ -3,7 +3,6 @@ import { BaseAction, ActionSettings } from '../BaseAction';
 export class LaunchPageAction extends BaseAction {
 	
 	async didReceiveSettings({ context, settings }: { context: string; settings: unknown; }) {
-		console.log('🟩 Settings received:', settings);
 		this.updateContextSettings(context, settings as ActionSettings);
 	};
 

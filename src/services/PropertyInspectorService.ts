@@ -101,11 +101,11 @@ class PropertyInspectorService {
     return explanationEl;
   }
 
-  private createPollingExplanation(unit: 'seconds' | 'minutes'): HTMLDivElement {
+  private createPollingExplanation(): HTMLDivElement {
     const explanationEl = document.createElement('div');
     explanationEl.style.marginBottom = '10px';
     explanationEl.style.marginLeft = '110px';
-    explanationEl.textContent = `How often to check for new updates (in ${unit}).`;
+    explanationEl.textContent = 'How often to check for new updates.';
     return explanationEl;
   }
 
@@ -122,8 +122,8 @@ class PropertyInspectorService {
     if (!contextSettings) {
       contextSettings = settings ?? {
         titleDisplay: finalConfig.titleDisplay,
-        lastfmApiKey: 'abc123',
-        lastfmUsername: 'Verringer',
+        lastfmApiKey: '',
+        lastfmUsername: '',
         pollingFrequency: finalConfig.pollingFrequencyDefault?.toString()
       };
       this.settingsMap.set(pluginContext, contextSettings);
@@ -241,7 +241,7 @@ class PropertyInspectorService {
     });
     pollingDropdown.setLabel('Refresh Interval');
     builder.addElement('pollingFrequency', pollingDropdown);
-    builder.addHtmlElement(this.createPollingExplanation(finalConfig.pollingFrequencyUnit!));
+    builder.addHtmlElement(this.createPollingExplanation());
 
     // Append to DOM
     builder.appendTo(document.querySelector('.sdpi-wrapper') ?? document.body);

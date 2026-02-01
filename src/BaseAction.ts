@@ -37,6 +37,7 @@ export interface ContextData {
 
 export abstract class BaseAction {
   protected contextData: Map<string, ContextData> = new Map();
+  private cacheSubscriptions: Map<string, Map<string, (key: string, data: unknown) => void>> = new Map();
   protected apiService: LastFmApiService;
   protected imageService: ImageService;
   protected pollingService: PollingService;
@@ -49,14 +50,15 @@ export abstract class BaseAction {
     this.pollingService = PollingService.getInstance();
     this.cacheService = CacheService.getInstance();
     this.gridService = GridService.getInstance();
-    
-    // Set up cache service with API service
-    this.cacheService.setApiService(this.apiService);
   }
 
   async willAppear(context: string, action: string): Promise<void> {
     const data = this.getOrCreateContextData(context);
     
+  }
+
+  willDisappear(context: string): void {
+    this.cleanup(context);
   }
 
   async keyUp(context: string, action: string): Promise<void> {
@@ -100,6 +102,8 @@ export abstract class BaseAction {
     data.lastFmApiKey = settings.lastfmApiKey || '';
     data.lastFmUsername = settings.lastfmUsername || '';
     data.titleDisplay = settings.titleDisplay || 'artist-song';
+    data.displayPeriod = settings.displayPeriod || data.displayPeriod;
+    data.targetPage = settings.targetPage || data.targetPage;
     data.pollingFrequency = settings.pollingFrequency;
     
     // Grid settings with defaults
@@ -108,9 +112,17 @@ export abstract class BaseAction {
     
     // Convert separate X and Y inputs to grid position
     if (data.gridEnabled && settings.gridPositionX && settings.gridPositionY) {
-      const x = parseInt(settings.gridPositionX) - 1; // Convert to 0-based
-      const y = parseInt(settings.gridPositionY) - 1; // Convert to 0-based
-      data.gridPosition = y * data.gridSize + x;
+      const xRaw = parseInt(settings.gridPositionX, 10);
+      const yRaw = parseInt(settings.gridPositionY, 10);
+      const size = Number.isFinite(data.gridSize) ? data.gridSize : 3;
+      
+      if (Number.isFinite(xRaw) && Number.isFinite(yRaw)) {
+        const x = Math.max(1, Math.min(size, xRaw));
+        const y = Math.max(1, Math.min(size, yRaw));
+        data.gridPosition = (y - 1) * size + (x - 1);
+      } else {
+        data.gridPosition = 0;
+      }
     } else {
       data.gridPosition = settings.gridPosition !== undefined ? settings.gridPosition : (data.gridEnabled ? 0 : undefined);
     }
@@ -287,12 +299,40 @@ export abstract class BaseAction {
    * Register for cache updates and trigger UI updates
    */
   protected registerForCacheUpdates<T>(
+    context: string,
     cacheKey: string,
     updateCallback: () => Promise<void>
   ): void {
-    this.cacheService.onUpdate(cacheKey, async (key, data) => {
+    let contextSubscriptions = this.cacheSubscriptions.get(context);
+    if (!contextSubscriptions) {
+      contextSubscriptions = new Map();
+      this.cacheSubscriptions.set(context, contextSubscriptions);
+    }
+
+    const existingCallback = contextSubscriptions.get(cacheKey);
+    if (existingCallback) {
+      this.cacheService.offUpdate(cacheKey, existingCallback);
+    }
+
+    const wrappedCallback = async () => {
       await updateCallback();
-    });
+    };
+
+    contextSubscriptions.set(cacheKey, wrappedCallback);
+    this.cacheService.onUpdate(cacheKey, wrappedCallback);
+  }
+
+  protected unregisterCacheUpdates(context: string): void {
+    const subscriptions = this.cacheSubscriptions.get(context);
+    if (!subscriptions) {
+      return;
+    }
+
+    for (const [cacheKey, callback] of subscriptions.entries()) {
+      this.cacheService.offUpdate(cacheKey, callback);
+    }
+
+    this.cacheSubscriptions.delete(context);
   }
 
   /**
@@ -306,10 +346,25 @@ export abstract class BaseAction {
    * Generate cache key for API calls
    */
   protected generateCacheKey(method: string, params: Record<string, string>): string {
-    return `${method}:${JSON.stringify(params)}`;
+    const orderedParams: Record<string, string> = {};
+    Object.keys(params).sort().forEach((key) => {
+      orderedParams[key] = params[key];
+    });
+    return `${method}:${JSON.stringify(orderedParams)}`;
+  }
+
+  protected getPollingTtlMs(
+    data: { pollingFrequency?: string } | undefined,
+    fallbackSeconds: number
+  ): number {
+    const raw = data?.pollingFrequency;
+    const parsed = raw ? parseInt(raw, 10) : NaN;
+    const seconds = Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackSeconds;
+    return seconds * 1000;
   }
 
   protected cleanup(context: string): void {
+    this.unregisterCacheUpdates(context);
     this.contextData.delete(context);
   }
 }

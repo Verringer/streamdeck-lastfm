@@ -3,7 +3,7 @@ import { PropertyInspector } from '@rweich/streamdeck-ts';
 
 const defaultSettings = {
   targetPage: 'profile',
-  lastfmUsername: 'Verringer'
+  lastfmUsername: ''
 };
 
 export const initLaunchPagePi = (pi: PropertyInspector, pluginContext: string, settings: unknown) => {
