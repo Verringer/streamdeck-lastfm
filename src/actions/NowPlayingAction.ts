@@ -1,146 +1,192 @@
-import { BaseAction } from '../BaseAction';
-
-let ready = false;
-
-// Get image url as base64 function
-const getImageAsBase64 = async (url: string) => {
-	// Make into a base64 image using fetch
-	const imageResponse = await fetch(url);
-	const imageData = await imageResponse.blob();
-	// Convert to base64
-	const imageBase64 = await new Promise((resolve, reject) => {
-		const reader = new FileReader();
-		reader.readAsDataURL(imageData);
-		reader.onloadend = () => {
-			resolve(reader.result);
-		};
-	});
-
-	return imageBase64;
-}
-
+import { BaseAction, ActionSettings } from '../BaseAction';
+import LastFmApiService from '../services/LastFmApiService';
 
 export class NowPlayingAction extends BaseAction {
-	private contextData: Map<string, any> = new Map();
+	protected apiService = LastFmApiService.getInstance();
+	private static lastUpdateKey = '';
+	private static lastUpdateTime = 0;
+	private static isRefreshingAll = false;
+	private static lastManualRefresh = 0;
+	private static readonly MANUAL_REFRESH_COOLDOWN = 8000; // 8 seconds
 
 	async didReceiveSettings({ context, settings }: { context: string; settings: unknown; }) {
-		console.log('Settings received:', settings);
-
-		// Store the settings in the contextData map
-		let data = this.contextData.get(context);
-		if (!data) {
-			data = { timesUpdated: 0, timeStarted: Date.now() };
-			this.contextData.set(context, data);
+		this.updateContextSettings(context, settings as ActionSettings);
+		
+		// Re-register for cache updates with new settings
+		const data = this.getOrCreateContextData(context);
+		if (data.lastFmUsername && data.lastFmApiKey) {
+			const cacheKey = this.generateCacheKey('user.getrecenttracks', { 
+				user: data.lastFmUsername 
+			});
+			
+			this.registerForCacheUpdates(cacheKey, () => this.updateTrackInfo(context));
 		}
-
-		// Set settings
-		data.lastFmApiKey = (settings as { lastfmApiKey: string })['lastfmApiKey'];
-		data.lastFmUsername = (settings as { lastfmUsername: string })['lastfmUsername'];
-		data.titleDisplay = (settings as { titleDisplay: string })['titleDisplay'];
-		data.pollingFrequency = (settings as { pollingFrequency: number })['pollingFrequency'];
-
-		// Set ready
-		ready = true;
-
-		// Update now
+		
 		this.updateTrackInfo(context);
 	};
 
 	async willAppear(context: string, action: string) {
-		// Retrieve the data object for the current context
-		let data = this.contextData.get(context);
-
-		// If data is undefined, create a new data object
-		if (!data) {
-			data = { pollingFrequency: 30, timesUpdated: 0, timeStarted: Date.now() };
-			this.contextData.set(context, data);
-		} else if (!data.pollingFrequency) {
-			data.pollingFrequency = 30;
+		const data = this.getOrCreateContextData(context);
+		
+		// Register for cache updates if we have credentials
+		if (data.lastFmUsername && data.lastFmApiKey) {
+			const cacheKey = this.generateCacheKey('user.getrecenttracks', { 
+				user: data.lastFmUsername 
+			});
+			
+			this.registerForCacheUpdates(cacheKey, async () => {
+				await this.updateTrackInfo(context);
+			});
 		}
-
-		// Update now
-		await this.updateTrackInfo(context);
-
-		// Then update every pollingFrequency seconds
-		const update = async () => {
-			await this.updateTrackInfo(context);
-
-			// Schedule the next update
-			setTimeout(update, data.pollingFrequency * 1000);
-		};
-
-		// Start the updates
-		update();
 	}
 
 	async keyUp(context: string, action: string) {
 	}
 
 	async keyDown(context: string, action: string) {
-		this.updateTrackInfo(context);
+		// Check manual refresh cooldown
+		const now = Date.now();
+		const timeSinceLastRefresh = now - NowPlayingAction.lastManualRefresh;
+		
+		if (timeSinceLastRefresh < NowPlayingAction.MANUAL_REFRESH_COOLDOWN) {
+			this.plugin.showOk(context);
+			return;
+		}
+		
+		NowPlayingAction.lastManualRefresh = now;
+		
+		await this.refreshAllWidgets(context);
 		this.plugin.showOk(context);
 	}
 
-	private async updateTrackInfo(context: string) {
-		let data = this.contextData.get(context);
+	private async refreshAllWidgets(context: string): Promise<void> {
+		// Prevent multiple simultaneous refreshes
+		if (NowPlayingAction.isRefreshingAll) {
+			return;
+		}
+
+		NowPlayingAction.isRefreshingAll = true;
+		
+		try {
+			// Get all contexts with same user/API
+			const allContexts = Array.from(this.contextData.keys());
+			const currentData = this.contextData.get(context);
+			
+			if (!currentData?.lastFmUsername || !currentData?.lastFmApiKey) {
+				return;
+			}
+
+			
+			// Force refresh cache key
+			const cacheKey = this.generateCacheKey('user.getrecenttracks', { 
+				user: currentData.lastFmUsername 
+			});
+			
+			// Force bypass cache for manual refresh
+			await this.refreshCachedData(
+				cacheKey,
+				() => this.apiService.getRecentTracks(currentData.lastFmUsername!, currentData.lastFmApiKey!),
+				(currentData.pollingFrequency ? parseInt(currentData.pollingFrequency) : 15) * 1000
+			);
+			
+			// Update all contexts with same credentials
+			const refreshPromises = allContexts.map(ctx => {
+				const ctxData = this.contextData.get(ctx);
+				if (ctxData?.lastFmUsername === currentData.lastFmUsername &&
+					ctxData?.lastFmApiKey === currentData.lastFmApiKey) {
+					return this.updateTrackInfo(ctx);
+				}
+				return Promise.resolve();
+			});
+
+			await Promise.all(refreshPromises);
+		} finally {
+			NowPlayingAction.isRefreshingAll = false;
+		}
+	}
+
+	private async updateTrackInfo(context: string): Promise<void> {
+		const data = this.contextData.get(context);
+
 		if (!data) {
-			console.log('No data for context:', context);
 			return;
 		}
 
-		data.timesUpdated++;
-
-		if (!ready) {
-			console.log('Not ready yet');
-			this.plugin.showAlert(context);
+		if (!this.isContextReady(context)) {
 			return;
 		}
 
-		// GETTING DATA FOR USERNAME...
-		console.log('🚀 Getting data for username:', data.lastFmUsername);
+		try {
+			if (!data.lastFmUsername || !data.lastFmApiKey) {
+				return;
+			}
 
-		const response = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${data.lastFmUsername}&api_key=${data.lastFmApiKey}&format=json`);
-		const responseData = await response.json();
+			// Create cache key for this request
+			const cacheKey = this.generateCacheKey('user.getrecenttracks', { 
+				user: data.lastFmUsername 
+			});
 
 
-		let title = '';
+			// Use cached data with proactive background refresh
+			const apiResponse = await this.getCachedData(
+				cacheKey,
+				() => this.apiService.getRecentTracks(data.lastFmUsername!, data.lastFmApiKey!),
+				(data.pollingFrequency ? parseInt(data.pollingFrequency) : 15) * 1000 // Use user setting or 15s default as TTL
+			);
+			
+			if (apiResponse.error) {
+				throw new Error(`API Error: ${apiResponse.error.message}`);
+			}
 
-		if (responseData.error) {
-			console.log('API Error', responseData.error);
-			data.image = '';
-			title = 'Error';
-			this.plugin.showAlert(context);
-			return;
+			const recentTracks = apiResponse.data;
+			const track = recentTracks?.recenttracks?.track?.[0];
+			
+
+			if (track) {
+				if (this.shouldUpdateGrid(context)) {
+					await this.updateGridDisplay(context, track, `${track.name} - ${track.artist['#text']}`);
+				} else {
+					const imageUrl = track.image[3]['#text'];
+					if (imageUrl) {
+						const imageBase64 = await this.imageService.getImageAsBase64(imageUrl);
+						if (imageBase64) {
+							this.plugin.setImage(imageBase64, context);
+						}
+					}
+					this.plugin.setTitle(`${track.name} - ${track.artist['#text']}`, context);
+				}
+			}
+		} catch (error) {
+			this.handleApiError(context, error);
 		}
+	}
 
-		// Get the last played track
-		const track = responseData.recenttracks.track[0];
+	private triggerSynchronizedUpdate(context: string): void {
+		// Find all contexts with same grid settings AND same configuration
+		const allContexts = Array.from(this.contextData.keys());
+		const currentData = this.contextData.get(context);
+		
+		if (!currentData?.gridEnabled) return;
 
-		title = track.name;
-		switch (data.titleDisplay) {
-			case 'song':
-				title = track.name;
-				break;
-			case 'artist':
-				title = track.artist['#text'];
-				break;
-			case 'album':
-				title = track.album['#text'];
-				break;
-			case 'artist-song':
-				title = `${track.artist['#text']}
-${track.name}`;
-				break;
-			case 'total-scrobbles':
-				title = `${responseData.recenttracks['@attr'].total}`;
-				break;
+		// Trigger update for all grid contexts with same user/api AND same grid size
+		for (const ctx of allContexts) {
+			const ctxData = this.contextData.get(ctx);
+			if (ctxData?.gridEnabled && 
+				ctxData.lastFmUsername === currentData.lastFmUsername &&
+				ctxData.lastFmApiKey === currentData.lastFmApiKey &&
+				ctxData.gridSize === currentData.gridSize) {
+				
+				// Schedule immediate update for this context
+				setTimeout(() => {
+					this.updateTrackInfo(ctx);
+				}, Math.random() * 100); // Small random delay to avoid race conditions
+			}
 		}
+	}
 
-		this.plugin.setTitle(title, context);
-
-		const imageBase64 = await getImageAsBase64(track.image[3]['#text']);
-		this.plugin.setImage(imageBase64 as string, context);
-
-		console.log('Updated', data.timesUpdated, 'times in', (Date.now() - data.timeStarted) / 1000, 'seconds.');
+	protected async updateGridDisplay(context: string, track: any, title: string): Promise<void> {
+		const data = this.contextData.get(context);
+		const imageUrl = track.image[3]['#text'];
+		await super.updateGridDisplay(context, imageUrl, title, data);
 	}
 }

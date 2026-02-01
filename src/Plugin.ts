@@ -16,50 +16,92 @@ const actions: { [key: string]: BaseAction } = {
   'com.verringer.lastfm.top-artist': new TopArtistAction(plugin)
 };
 
-plugin.on('willAppear', async ({ context, action }) => {
-
-  // Strip dev. off the action name for development
-  action = action.replace(/^dev\./, '');
-
-  const actionInstance = actions[action];
-  if (actionInstance) {
-    await actionInstance.willAppear(context, action);
+// Error handling wrapper to prevent crashes
+const safeExecute = async (fn: () => Promise<void>, context?: string, action?: string) => {
+  try {
+    await fn();
+  } catch (error) {
+    console.error(`Error in ${action || 'unknown'} action${context ? ` for context ${context}` : ''}:`, error);
+    
+    // Show alert on the StreamDeck if we have a context
+    if (context) {
+      try {
+        plugin.showAlert(context);
+      } catch (alertError) {
+        console.error('Failed to show alert:', alertError);
+      }
+    }
   }
+};
 
+// Strip dev. prefix helper
+const stripDevPrefix = (action: string): string => action.replace(/^dev\./, '');
+
+// Get action instance helper
+const getActionInstance = (action: string): BaseAction | null => {
+  const cleanAction = stripDevPrefix(action);
+  return actions[cleanAction] || null;
+};
+
+plugin.on('willAppear', async ({ context, action }) => {
+  const actionInstance = getActionInstance(action);
+  if (actionInstance) {
+    await safeExecute(
+      () => actionInstance.willAppear(context, action),
+      context,
+      action
+    );
+  }
 });
 
-plugin.on('willAppear', ({ context }) => plugin.getSettings(context));
+plugin.on('willAppear', ({ context }) => {
+	safeExecute(async () => plugin.getSettings(context), context);
+});
 
 plugin.on('keyUp', async ({ context, action }) => {
-
-  // Strip dev. off the action name for development
-  action = action.replace(/^dev\./, '');
-
-  const actionInstance = actions[action];
+  const actionInstance = getActionInstance(action);
   if (actionInstance) {
-    await actionInstance.keyUp(context, action);
+    await safeExecute(
+      () => actionInstance.keyUp(context, action),
+      context,
+      action
+    );
   }
 });
 
 plugin.on('keyDown', async ({ context, action }) => {
-  // Strip dev. off the action name for development
-  action = action.replace(/^dev\./, '');
-
-  const actionInstance = actions[action];
+  const actionInstance = getActionInstance(action);
   if (actionInstance) {
-    await actionInstance.keyDown(context, action);
+    await safeExecute(
+      () => actionInstance.keyDown(context, action),
+      context,
+      action
+    );
   }
 });
 
 plugin.on('didReceiveSettings', ({ action, context, settings }) => {
-  // Strip dev. off the action name for development
-  action = action.replace(/^dev\./, '');
-
-  const actionInstance = actions[action];
+  const actionInstance = getActionInstance(action);
   if (actionInstance) {
-    actionInstance.didReceiveSettings({ context, settings });
+    safeExecute(
+      () => actionInstance.didReceiveSettings({ context, settings }),
+      context,
+      action
+    );
   }
-}
-);
+});
 
+// Global error handlers for uncaught exceptions (browser environment)
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    console.error('Uncaught Exception:', event.error);
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled Rejection:', event.reason);
+    event.preventDefault(); // Prevent the default browser behavior
+  });
+}
+
+// Export the plugin for StreamDeck
 export default plugin;
