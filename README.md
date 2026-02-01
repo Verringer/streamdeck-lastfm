@@ -100,13 +100,7 @@ There is additional documentation in `docs/README.md` for this.
 
 ## Future Plans
 
-- [ ] There's a small bug where there's no initial content in the widgets settings + unless you set each setting - it doesn't seem to apply the default. Important TODO
-- [ ] Adding positions to the widgets would allow users to create a grid of their last 5 tracks, top 5 artists, etc. This would be a nice feature to add, but would require the API to be called multiple times for each widget, which would be a lot of requests. This could be solved by adding a cache, but that would be a lot of work for a small feature.
-- [ ] Originally intended on adding a "love track", which would love the track on Last.fm (something I personally don't utilise as it requires going out of your way). The Last.fm API doesn't allow you to check if a track is loved or not - and I really wanted to have it toggle. Would also benefit from a cache so we're not calling recentlyplayed * actionsvisible times per polling period.
-- [ ] Easy access to scrobbling (perhaps with a 3rd party app), so you can manually enter those pesky vinyl scrobbles.
-- [ ] More labels in the future including adding the username, etc.
 - [ ] Configurable onpress actions, such as opening the track, profile, etc... instead of just forced refreshing. In an ideal world - I'd like it to force refresh on hold for x seconds, and configurable for the short press.
 - [ ] Adding playstats for artists to see how many times they've been scrobbled, etc.
-- [ ] Gallery widget to fade between top tracks, etc.
 
 Love to hear your ideas, please submit in the issues tab to discuss.
