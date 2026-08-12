@@ -25,7 +25,7 @@ function App() {
       {/* Header */}
       <div className="flex justify-between container mx-auto gap-x-8 gap-y-20 flex-col md:flex-row items-center min-h-[80vh] py-24 px-8">
         <div className="order-2 md:order-1">
-          <h1 class="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl">
+          <h1 className="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl">
             Last.fm Listening History At Your Fingertips
           </h1>
           <div className="my-2"></div>
@@ -71,7 +71,7 @@ function App() {
             },
             {
               title: "Open Source",
-              description: "This plugin was made to solve my problem and open sourced to help solve yours. Built in TypeScript made possible by <a href='https://github.com/rweich/streamdeck-ts' target='_blank'><code>@rweich/streamdeck-ts</code></a>",
+              description: "This plugin was made to solve my problem and open sourced to help solve yours. Built in TypeScript made possible by <a href='https://github.com/rweich/streamdeck-ts' target='_blank' rel='noreferrer'><code>@rweich/streamdeck-ts</code></a>",
               emoji: "❤️"
             },
             {
@@ -81,10 +81,10 @@ function App() {
             },
           ]
           ).map((item, index) => (
-            <li className={`w-full py-20 flex justify-between gap-x-8 gap-y-4 px-6 sm:px-20 rounded-2xl flex-col sm:flex-row items-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
+            <li key={item.title} className={`w-full py-20 flex justify-between gap-x-8 gap-y-4 px-6 sm:px-20 rounded-2xl flex-col sm:flex-row items-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
               <Fade direction="left">
                 <div className="order-2 sm:order-1 text-center sm:text-left">
-                  <h2 class="text-2xl font-bold mb-2">{item.title}</h2>
+                  <h2 className="text-2xl font-bold mb-2">{item.title}</h2>
                   <div dangerouslySetInnerHTML={{ __html: item.description }}></div>
                 </div>
               </Fade>
@@ -104,7 +104,7 @@ function App() {
       <div className="container mx-auto">
         <div className="flex justify-between max-w-5xl gap-y-24 px-8 mx-auto flex-col md:flex-row gap-x-24">
           <div className="order-2 md:order-1">
-            <h1 class="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl text-center md:text-left">
+            <h1 className="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl text-center md:text-left">
               Super Configurable Widgets
             </h1>
             <div className="my-2"></div>
@@ -150,8 +150,8 @@ function App() {
             icon: launchPageIcon
           },
         ]
-        ).map((item, index) => (
-          <Fade direction="up">
+        ).map((item) => (
+          <Fade key={item.title} direction="up">
             <div className="w-full rounded-2xl bg-gradient-to-br from-[#232323] to-[#121212] text-white p-8 shadow-lg">
 
               <div className="sm:flex gap-8">
@@ -187,7 +187,7 @@ function App() {
             </p>
             <div className="my-8"></div>
             <p>
-              You’ll require a API key from the Last.fm developer applications for this to work.
+              Most data widgets require an API key from the Last.fm developer applications. The Launch Page action does not.
             </p>
 
             <a href="https://www.last.fm/api/account/create" target="_blank" className="mt-6 mx-auto group lg:mx-0 w-fit flex items-center font-bold hover:opacity-60 transition duration-300">
@@ -225,7 +225,7 @@ function App() {
       {/* Contribute */}
       <div className="flex justify-center mb-48 px-8">
         <div className="flex flex-col items-center text-center">
-          <h1 class="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl">
+          <h1 className="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl">
             Download
           </h1>
           <div className="my-2"></div>
@@ -234,26 +234,26 @@ function App() {
           </p>
           <div className="my-4"></div>
           <p>
-            You’ll require a API key from the Last.fm developer applications for this to work.
+            Most data widgets require an API key from the Last.fm developer applications. The Launch Page action does not.
           </p>
           <div className="my-1"></div>
-          <a href="https://www.last.fm/api/account/create" target="_blank" className="mt-6 mx-auto group lg:mx-0 w-fit flex items-center font-bold hover:opacity-60 transition duration-300">
+          <a href="https://www.last.fm/api/account/create" target="_blank" className="mt-6 mx-auto group lg:mx-0 w-fit flex items-center font-bold hover:opacity-60 transition duration-300" rel="noreferrer">
             Create API key
             <svg xmlns="http://www.w3.org/2000/svg"
               className="w-3 ml-2 text-white group-hover:translate-x-1 transition duration-300"
               viewBox="0 0 24 25.243">
               <g id="Icon_feather-arrow-right" data-name="Icon feather-arrow-right" transform="translate(-6 -5.379)">
-                <path id="Path_274" data-name="Path 274" d="M7.5,18h21" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
-                <path id="Path_275" data-name="Path 275" d="M18,7.5,28.5,18,18,28.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+                <path id="Path_274" data-name="Path 274" d="M7.5,18h21" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
+                <path id="Path_275" data-name="Path 275" d="M18,7.5,28.5,18,18,28.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
               </g>
             </svg>
           </a>
           <div className="my-4"></div>
           <div className="flex gap-8 flex-col md:flex-row">
-            <a href="https://marketplace.elgato.com/product/stream-deck-lastfm-1c78b0c3-481a-4e1c-a0ee-a2a07b005576" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
+            <a href="https://marketplace.elgato.com/product/stream-deck-lastfm-1c78b0c3-481a-4e1c-a0ee-a2a07b005576" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300" rel="noreferrer">
               Download from Elgato Marketplace
             </a>
-            <a href="https://github.com/Verringer/streamdeck-lastfm/releases/latest" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
+            <a href="https://github.com/Verringer/streamdeck-lastfm/releases/latest" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300" rel="noreferrer">
               Download from GitHub Releases
             </a>
           </div>
@@ -263,13 +263,13 @@ function App() {
       {/* Contribute */}
       <div className="flex justify-center py-24">
         <div className="text-center">
-          <h1 class="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl">
+          <h1 className="text-3xl sm:text-5xl leading-normal sm:leading-normal font-bold max-w-xl">
             Contribute
           </h1>
           <div className="my-2"></div>
           <p className="max-w-sm leading-loose">Any contributions are welcome, for whatever reason. If you want to add a feature, fix a bug, or just want to play around with the code - have fun!</p>
           <div className="my-8"></div>
-          <a href="https://github.com/verringer/streamdeck-lastfm" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300">
+          <a href="https://github.com/verringer/streamdeck-lastfm" target="_blank" className="bg-black text-white hover:bg-white hover:text-black font-bold py-4 px-8 rounded-full shadow-lg transition duration-300" rel="noreferrer">
             Go to GitHub Repository
           </a>
         </div>

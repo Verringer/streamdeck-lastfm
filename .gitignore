@@ -5,5 +5,4 @@
 *.streamDeckPlugin
 
 /docs/node_modules/
-/docs/package-lock.json
 /docs/dist/

@@ -36,7 +36,7 @@ Alternatively download the latest release from the sidebar and open the download
 
 ## Usage / Setup
 
-Go to the [Last.fm API](https://www.last.fm/api/account/create) and create an API key. Copy the API key somewhere safe while you set up your actions (you will need it for each action you add).
+Go to the [Last.fm API](https://www.last.fm/api/account/create) and create an API key. Copy the API key somewhere safe while you set up your data actions. The Launch Page action does not require an API key.
 
 Download the plugin from the latest releases on the sidebar and double click the file to install it in StreamDeck.
 
@@ -50,19 +50,47 @@ If you'd like to have a blank title, you can simply add a space to the title fie
 
 Any contributions are welcome, for whatever reason. If you want to add a feature, fix a bug, or just want to play around with the code, feel free to do so - it's all open source for a reason.
 
-During development you can use either of the following to install the plugin:
+Development requires [Node.js](https://nodejs.org/) 22.22.2 or newer. Node.js 24 LTS is recommended.
 
-### Installation
+Install the locked dependencies and build the development plugin:
 
-Once you've loaded the project, you can install the development version of the plugin by running the following command which creates a symlink to the plugin in the StreamDeck plugin folder:
-MacOS: ``ln -s $(pwd)/dist/dev.com.verringer.lastfm.sdPlugin ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/``
+```sh
+npm ci
+npm run build
+```
 
-Run ``yarn`` in root to install dependencies and ``yarn build`` after making changes to build it to your StreamDeck plugin folder. If changes are made to manifest, you will need to restart StreamDeck (the application) for them to take effect. Manifest is defined in /assets/manifest.json.
+On macOS, create a symlink so Stream Deck can load the development build:
+
+```sh
+ln -s "$(pwd)/dist/dev.com.verringer.lastfm.sdPlugin" "$HOME/Library/Application Support/com.elgato.StreamDeck/Plugins/"
+```
+
+Use `npm run watch` while developing. If you change `assets/manifest.json`, restart the Stream Deck application for the change to take effect.
+
+Run the complete verification suite before submitting a change:
+
+```sh
+npm run ci
+```
+
+This runs type checking, linting, formatting validation, and a production build.
 
 ### Debugging
 
 While developing, console can be accessed here:
 http://localhost:23654/
+
+### Packaging and Releases
+
+Create an installable plugin archive locally with:
+
+```sh
+npm run build-prod
+npm run set-plugin-version -- 1.2.3
+npm run package-plugin
+```
+
+This creates `com.verringer.lastfm.streamDeckPlugin` in the repository root. Maintainers can publish a release from the GitHub Actions **Release** workflow by entering the version without the `v` prefix.
 
 ### Adding New Actions
 If adding a new icon, make sure to follow the pre-existing format and render the following sizes:
@@ -100,7 +128,6 @@ There is additional documentation in `docs/README.md` for this.
 
 ## Future Plans
 
-- [ ] There's a small bug where there's no initial content in the widgets settings + unless you set each setting - it doesn't seem to apply the default. Important TODO
 - [ ] Adding positions to the widgets would allow users to create a grid of their last 5 tracks, top 5 artists, etc. This would be a nice feature to add, but would require the API to be called multiple times for each widget, which would be a lot of requests. This could be solved by adding a cache, but that would be a lot of work for a small feature.
 - [ ] Originally intended on adding a "love track", which would love the track on Last.fm (something I personally don't utilise as it requires going out of your way). The Last.fm API doesn't allow you to check if a track is loved or not - and I really wanted to have it toggle. Would also benefit from a cache so we're not calling recentlyplayed * actionsvisible times per polling period.
 - [ ] Easy access to scrobbling (perhaps with a 3rd party app), so you can manually enter those pesky vinyl scrobbles.
