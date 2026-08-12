@@ -1,22 +1,34 @@
 import { Plugin } from '@rweich/streamdeck-ts';
 
+export interface SettingsEvent {
+  context: string;
+  settings: unknown;
+}
+
 export abstract class BaseAction {
-  constructor(protected plugin: Plugin) { }
+  constructor(protected readonly plugin: Plugin) {}
 
-  async willAppear(context: string, action: string): Promise<void> {
-    // Default implementation (does nothing)
+  willAppear(context: string, action: string): Promise<void> | void {
+    void context;
+    void action;
   }
 
-  async keyUp(context: string, action: string): Promise<void> {
-    // Default implementation (does nothing)
+  willDisappear(context: string, action: string): Promise<void> | void {
+    void context;
+    void action;
   }
 
-  async keyDown(context: string, action: string): Promise<void> {
-    // Default implementation (does nothing)
+  keyUp(context: string, action: string): Promise<void> | void {
+    void context;
+    void action;
   }
 
-  async didReceiveSettings({ context, settings }: { context: string; settings: unknown; }): Promise<void> {
-    // Default implementation (does nothing)
+  keyDown(context: string, action: string): Promise<void> | void {
+    void context;
+    void action;
   }
 
+  didReceiveSettings(event: SettingsEvent): Promise<void> | void {
+    void event;
+  }
 }

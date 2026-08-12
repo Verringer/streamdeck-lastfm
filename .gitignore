@@ -2,6 +2,7 @@
 /node_modules/
 
 /dist
+*.streamDeckPlugin
 
 /docs/node_modules/
 /docs/package-lock.json

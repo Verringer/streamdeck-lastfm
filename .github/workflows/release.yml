@@ -1,21 +1,35 @@
 name: Release
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version (without the v prefix)
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   release:
-
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
-          node-version: 16
-      - run: yarn install
-      - run: yarn build-prod
-      - name: Release
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run ci
+      - name: Set plugin version
         env:
-          GH_TOKEN: ${{ secrets.PAT }}
-          GITHUB_TOKEN: ${{ secrets.PAT }}
-        run: yarn semantic-release --branches main --force-release
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: npm run set-plugin-version -- "$RELEASE_VERSION"
+      - run: npm run package-plugin
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: gh release create "v$RELEASE_VERSION" com.verringer.lastfm.streamDeckPlugin --generate-notes --title "v$RELEASE_VERSION"

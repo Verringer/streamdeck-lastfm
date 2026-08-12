@@ -1,37 +1,36 @@
-import { Streamdeck } from '@rweich/streamdeck-ts';
-import { initNowPlayingPi } from './actions/NowPlayingPi';
+import { PropertyInspector, Streamdeck } from '@rweich/streamdeck-ts';
 import { initLaunchPagePi } from './actions/LaunchPagePi';
-import { initTopTrackPi } from './actions/TopTrackPi';
+import { initNowPlayingPi } from './actions/NowPlayingPi';
 import { initTopAlbumPi } from './actions/TopAlbumPi';
 import { initTopArtistPi } from './actions/TopArtistPi';
+import { initTopTrackPi } from './actions/TopTrackPi';
+
+type Initializer = (pi: PropertyInspector, pluginContext: string, settings: unknown) => void;
+
+const initializers: Record<string, Initializer> = {
+  'now-playing': initNowPlayingPi,
+  'launch-page': initLaunchPagePi,
+  'top-track': initTopTrackPi,
+  'top-album': initTopAlbumPi,
+  'top-artist': initTopArtistPi,
+};
 
 const pi = new Streamdeck().propertyinspector();
 pi.on('websocketOpen', ({ uuid }) => pi.getSettings(uuid));
 pi.on('didReceiveSettings', ({ action, settings }) => {
   if (pi.pluginUUID === undefined) {
-    console.error('pi has no uuid! is it registered already?', pi.pluginUUID);
+    console.error('Property inspector has no UUID; it may not be registered yet.');
     return;
   }
 
-  switch (action.split('.').pop()) {
-    case 'now-playing':
-      initNowPlayingPi(pi, pi.pluginUUID, settings);
-      break;
-    case 'launch-page':
-      initLaunchPagePi(pi, pi.pluginUUID, settings);
-      break;
-    case 'top-track':
-      initTopTrackPi(pi, pi.pluginUUID, settings);
-      break;
-    case 'top-album':
-      initTopAlbumPi(pi, pi.pluginUUID, settings);
-      break;
-    case 'top-artist':
-      initTopArtistPi(pi, pi.pluginUUID, settings);
-      break;
-    default:
-      throw new Error('no init function for action: ' + action);
+  const actionName = action.split('.').at(-1) ?? '';
+  const initialize = initializers[actionName];
+  if (initialize === undefined) {
+    console.error('No property inspector initializer for action:', action);
+    return;
   }
+
+  initialize(pi, pi.pluginUUID, settings);
 });
 
 export default pi;
