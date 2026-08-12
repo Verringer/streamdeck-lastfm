@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file. See
 
 ## Unreleased
 
+### Added
+
+- Select positions 1–5 for recent and top-item actions without additional list requests.
+- Choose from additional username and play-count labels.
+- Configure button presses to refresh, open the displayed item, open the user profile, or do nothing.
+- Share identical JSON requests through a five-second, memory-only cache capped at 32 entries.
+
 ### Changed
 
 - Updated the plugin and documentation build stacks for Node.js 24.

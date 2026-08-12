@@ -5,13 +5,38 @@ interface ApiErrorResponse {
   message?: string;
 }
 
+interface ResponseCacheEntry {
+  expiresAt: number;
+  response: Promise<unknown>;
+}
+
+const RESPONSE_CACHE_TTL_MS = 5_000;
+const RESPONSE_CACHE_MAX_ENTRIES = 32;
+const responseCache = new Map<string, ResponseCacheEntry>();
+
+const getResponseCacheKey = (url: string, init?: RequestInit): string | undefined => {
+  const method = init?.method?.toUpperCase() ?? 'GET';
+  if (method !== 'GET') {
+    return undefined;
+  }
+
+  const headers = [...new Headers(init?.headers).entries()].sort(([left], [right]) => left.localeCompare(right));
+  return JSON.stringify([url, headers]);
+};
+
 export const createLastFmUrl = (method: string, parameters: Record<string, string>): string => {
   const url = new URL(LAST_FM_API_URL);
   url.search = new URLSearchParams({ method, ...parameters, format: 'json' }).toString();
   return url.toString();
 };
 
-export const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
+export const getPositionedItem = <T>(items: T[], position: string): T | undefined => {
+  const parsedPosition = Number.parseInt(position, 10);
+  const index = Number.isInteger(parsedPosition) && parsedPosition > 0 ? parsedPosition - 1 : 0;
+  return items[index];
+};
+
+const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, init);
   if (!response.ok) {
     throw new Error(`Request failed with HTTP ${response.status}`);
@@ -23,6 +48,41 @@ export const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> 
   }
 
   return data;
+};
+
+export const fetchJson = <T>(url: string, init?: RequestInit): Promise<T> => {
+  const cacheKey = getResponseCacheKey(url, init);
+  if (cacheKey === undefined) {
+    return requestJson<T>(url, init);
+  }
+
+  const now = Date.now();
+  const cached = responseCache.get(cacheKey);
+  if (cached !== undefined && cached.expiresAt > now) {
+    return cached.response as Promise<T>;
+  }
+
+  for (const [key, entry] of responseCache) {
+    if (entry.expiresAt <= now) {
+      responseCache.delete(key);
+    }
+  }
+
+  if (responseCache.size >= RESPONSE_CACHE_MAX_ENTRIES) {
+    const oldest = responseCache.keys().next();
+    if (!oldest.done) {
+      responseCache.delete(oldest.value);
+    }
+  }
+
+  const response = requestJson<T>(url, init).catch((error: unknown) => {
+    if (responseCache.get(cacheKey)?.response === response) {
+      responseCache.delete(cacheKey);
+    }
+    throw error;
+  });
+  responseCache.set(cacheKey, { expiresAt: now + RESPONSE_CACHE_TTL_MS, response });
+  return response;
 };
 
 export const imageUrlToDataUrl = async (url: string): Promise<string> => {

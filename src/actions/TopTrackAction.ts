@@ -1,6 +1,6 @@
 import { Plugin } from '@rweich/streamdeck-ts';
 import { PollingAction, PollingSettings } from './PollingAction';
-import { createLastFmUrl, fetchJson, imageUrlToDataUrl } from './actionUtils';
+import { createLastFmUrl, fetchJson, getPositionedItem, imageUrlToDataUrl } from './actionUtils';
 
 interface TopTrackSettings extends PollingSettings {
   displayPeriod: string;
@@ -15,6 +15,7 @@ interface TopTracksResponse {
       artist: { name: string };
       name: string;
       playcount: string;
+      url: string;
     }>;
   };
 }
@@ -31,6 +32,8 @@ const defaultSettings: TopTrackSettings = {
   lastfmApiKey: 'abc123',
   lastfmUsername: 'Verringer',
   pollingFrequency: '30',
+  position: '1',
+  pressAction: 'refresh',
 };
 
 export class TopTrackAction extends PollingAction<TopTrackSettings> {
@@ -44,18 +47,23 @@ export class TopTrackAction extends PollingAction<TopTrackSettings> {
         user: settings.lastfmUsername,
         period: settings.displayPeriod,
         api_key: settings.lastfmApiKey,
+        limit: '5',
       }),
     );
-    const track = response.toptracks.track[0];
+    const track = getPositionedItem(response.toptracks.track, settings.position);
     if (track === undefined) {
-      throw new Error('Last.fm returned no top tracks');
+      throw new Error(`Last.fm returned no top track at position ${settings.position}`);
     }
+
+    this.setItemUrl(context, track.url);
 
     const titles: Record<string, string> = {
       song: track.name,
       artist: track.artist.name,
       'artist-song': `${track.artist.name}\n${track.name}`,
+      'track-scrobbles': `${track.name}\n${track.playcount}`,
       'total-scrobbles': track.playcount,
+      username: settings.lastfmUsername,
     };
     this.plugin.setTitle(titles[settings.titleDisplay] ?? track.name, context);
 

@@ -1,6 +1,6 @@
 import { Plugin } from '@rweich/streamdeck-ts';
 import { PollingAction, PollingSettings } from './PollingAction';
-import { createLastFmUrl, fetchJson, imageUrlToDataUrl } from './actionUtils';
+import { createLastFmUrl, fetchJson, getPositionedItem, imageUrlToDataUrl } from './actionUtils';
 
 interface TopAlbumSettings extends PollingSettings {
   displayPeriod: string;
@@ -16,6 +16,7 @@ interface TopAlbumsResponse {
       image: Array<{ '#text': string }>;
       name: string;
       playcount: string;
+      url: string;
     }>;
   };
 }
@@ -26,6 +27,8 @@ const defaultSettings: TopAlbumSettings = {
   lastfmApiKey: 'abc123',
   lastfmUsername: 'Verringer',
   pollingFrequency: '30',
+  position: '1',
+  pressAction: 'refresh',
 };
 
 export class TopAlbumAction extends PollingAction<TopAlbumSettings> {
@@ -39,17 +42,23 @@ export class TopAlbumAction extends PollingAction<TopAlbumSettings> {
         user: settings.lastfmUsername,
         period: settings.displayPeriod,
         api_key: settings.lastfmApiKey,
+        limit: '5',
       }),
     );
-    const album = response.topalbums.album[0];
+    const album = getPositionedItem(response.topalbums.album, settings.position);
     if (album === undefined) {
-      throw new Error('Last.fm returned no top albums');
+      throw new Error(`Last.fm returned no top album at position ${settings.position}`);
     }
+
+    this.setItemUrl(context, album.url);
 
     const titles: Record<string, string> = {
       album: album.name,
       artist: album.artist.name,
+      'artist-album': `${album.artist.name}\n${album.name}`,
+      'album-scrobbles': `${album.name}\n${album.playcount}`,
       'total-scrobbles': album.playcount,
+      username: settings.lastfmUsername,
     };
     this.plugin.setTitle(titles[settings.titleDisplay] ?? album.name, context);
 

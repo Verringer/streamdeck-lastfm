@@ -2,12 +2,16 @@ import { Plugin } from '@rweich/streamdeck-ts';
 import { BaseAction, SettingsEvent } from '../BaseAction';
 
 export interface PollingSettings {
+  lastfmUsername: string;
   pollingFrequency: string;
+  position: string;
+  pressAction: string;
 }
 
 interface ContextState<TSettings> {
   active: boolean;
-  inFlight?: Promise<void>;
+  inFlight?: Promise<boolean>;
+  itemUrl?: string;
   settings?: TSettings;
   timer?: ReturnType<typeof setTimeout>;
 }
@@ -26,6 +30,7 @@ export abstract class PollingAction<TSettings extends PollingSettings> extends B
   async didReceiveSettings({ context, settings }: SettingsEvent): Promise<void> {
     const state = this.getState(context);
     state.settings = { ...this.defaultSettings, ...this.asSettings(settings) };
+    state.itemUrl = undefined;
 
     if (state.active) {
       await this.refresh(context);
@@ -53,11 +58,42 @@ export abstract class PollingAction<TSettings extends PollingSettings> extends B
   }
 
   async keyDown(context: string): Promise<void> {
-    await this.refresh(context);
-    this.plugin.showOk(context);
+    const state = this.getState(context);
+    const settings = state.settings;
+    if (settings === undefined) {
+      this.plugin.showAlert(context);
+      return;
+    }
+
+    switch (settings.pressAction) {
+      case 'none':
+        return;
+      case 'open-item':
+        if (state.itemUrl === undefined && !(await this.refresh(context))) {
+          return;
+        }
+        if (state.itemUrl === undefined) {
+          this.plugin.showAlert(context);
+          return;
+        }
+        this.plugin.openUrl(state.itemUrl);
+        return;
+      case 'open-profile':
+        this.plugin.openUrl(`https://www.last.fm/user/${encodeURIComponent(settings.lastfmUsername)}`);
+        return;
+      case 'refresh':
+      default:
+        if (await this.refresh(context)) {
+          this.plugin.showOk(context);
+        }
+    }
   }
 
   protected abstract update(context: string, settings: TSettings): Promise<void>;
+
+  protected setItemUrl(context: string, url: string): void {
+    this.getState(context).itemUrl = url;
+  }
 
   private asSettings(settings: unknown): Partial<TSettings> {
     return typeof settings === 'object' && settings !== null ? (settings as Partial<TSettings>) : {};
@@ -87,29 +123,33 @@ export abstract class PollingAction<TSettings extends PollingSettings> extends B
     );
   }
 
-  private async refresh(context: string): Promise<void> {
+  private async refresh(context: string): Promise<boolean> {
     const state = this.getState(context);
     this.clearTimer(state);
 
     if (state.settings === undefined) {
-      return;
+      return false;
     }
 
     if (state.inFlight !== undefined) {
-      await state.inFlight;
-      return;
+      return state.inFlight;
     }
 
     const settings = state.settings;
-    state.inFlight = this.update(context, settings).catch((error: unknown) => {
-      console.error('Unable to update action', error);
-      this.plugin.showAlert(context);
-    });
-    await state.inFlight;
+    state.inFlight = this.update(context, settings)
+      .then(() => true)
+      .catch((error: unknown) => {
+        console.error('Unable to update action', error);
+        this.plugin.showAlert(context);
+        return false;
+      });
+    const succeeded = await state.inFlight;
     state.inFlight = undefined;
 
     if (state.active && state.settings !== undefined) {
       state.timer = setTimeout(() => void this.refresh(context), this.getInterval(state.settings));
     }
+
+    return succeeded;
   }
 }

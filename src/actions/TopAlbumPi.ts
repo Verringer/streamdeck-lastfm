@@ -5,5 +5,8 @@ export const initTopAlbumPi = (pi: PropertyInspector, pluginContext: string, set
   initTopItemPi(pi, pluginContext, settings, [
     ['Show artist', 'artist'],
     ['Show album title', 'album'],
+    ['Artist + album', 'artist-album'],
+    ['Album + scrobbles', 'album-scrobbles'],
     ['Your scrobbles', 'total-scrobbles'],
+    ['Username', 'username'],
   ]);

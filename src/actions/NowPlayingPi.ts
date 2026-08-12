@@ -11,6 +11,8 @@ const defaultSettings: NowPlayingSettings = {
   lastfmApiKey: 'abc123',
   lastfmUsername: 'Verringer',
   pollingFrequency: '30',
+  position: '1',
+  pressAction: 'refresh',
 };
 
 export const initNowPlayingPi = (pi: PropertyInspector, pluginContext: string, settings: unknown): void => {
@@ -23,8 +25,11 @@ export const initNowPlayingPi = (pi: PropertyInspector, pluginContext: string, s
       .addOption('Show only artist', 'artist')
       .addOption('Show only song', 'song')
       .addOption('Show only album title', 'album')
+      .addOption('Artist + album', 'artist-album')
       .addOption('Full artist - song', 'artist-song')
       .addOption('Your total scrobbles', 'total-scrobbles')
+      .addOption('Username', 'username')
+      .addOption('Username + total scrobbles', 'username-scrobbles')
       .setLabel('Label'),
   );
 

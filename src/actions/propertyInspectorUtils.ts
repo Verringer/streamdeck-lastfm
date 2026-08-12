@@ -7,12 +7,16 @@ export interface CommonSettings extends FormSettings {
   lastfmApiKey: string;
   lastfmUsername: string;
   pollingFrequency: string;
+  position: string;
+  pressAction: string;
 }
 
 export const commonDefaults: CommonSettings = {
   lastfmApiKey: 'abc123',
   lastfmUsername: 'Verringer',
   pollingFrequency: '30',
+  position: '1',
+  pressAction: 'refresh',
 };
 
 export const getInitialSettings = <T extends FormSettings>(settings: unknown, defaults: T): T => {
@@ -42,6 +46,27 @@ export const addCommonFields = <T extends CommonSettings>(
   pollingUnit: 'seconds' | 'minutes',
 ): void => {
   const commonBuilder = builder as unknown as FormBuilder<CommonSettings>;
+  commonBuilder.addElement(
+    'position',
+    builder
+      .createDropdown()
+      .addOption('1', '1')
+      .addOption('2', '2')
+      .addOption('3', '3')
+      .addOption('4', '4')
+      .addOption('5', '5')
+      .setLabel('Position'),
+  );
+  commonBuilder.addElement(
+    'pressAction',
+    builder
+      .createDropdown()
+      .addOption('Refresh', 'refresh')
+      .addOption('Open displayed item', 'open-item')
+      .addOption('Open user profile', 'open-profile')
+      .addOption('Do nothing', 'none')
+      .setLabel('On Press'),
+  );
   commonBuilder.addElement('lastfmApiKey', builder.createInput().setLabel('API Key').setPlaceholder('abc'));
   addExplanation(commonBuilder, 'You can get your API key from ', 'https://www.last.fm/api/account/create');
 

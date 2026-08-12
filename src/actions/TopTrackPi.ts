@@ -7,5 +7,7 @@ export const initTopTrackPi = (pi: PropertyInspector, pluginContext: string, set
     ['Show only song', 'song'],
     ['Show only album title', 'album'],
     ['Full artist - song', 'artist-song'],
+    ['Track + scrobbles', 'track-scrobbles'],
     ['Your scrobbles', 'total-scrobbles'],
+    ['Username', 'username'],
   ]);

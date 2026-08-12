@@ -1,6 +1,6 @@
 import { Plugin } from '@rweich/streamdeck-ts';
 import { PollingAction, PollingSettings } from './PollingAction';
-import { createLastFmUrl, cropImageToSquare, fetchJson } from './actionUtils';
+import { createLastFmUrl, cropImageToSquare, fetchJson, getPositionedItem } from './actionUtils';
 
 interface TopArtistSettings extends PollingSettings {
   displayPeriod: string;
@@ -15,6 +15,7 @@ interface TopArtistsResponse {
       mbid: string;
       name: string;
       playcount: string;
+      url: string;
     }>;
   };
 }
@@ -36,6 +37,8 @@ const defaultSettings: TopArtistSettings = {
   lastfmApiKey: 'abc123',
   lastfmUsername: 'Verringer',
   pollingFrequency: '30',
+  position: '1',
+  pressAction: 'refresh',
 };
 
 const musicBrainzHeaders = { 'User-Agent': 'StreamDeck Lastfm' };
@@ -74,14 +77,23 @@ export class TopArtistAction extends PollingAction<TopArtistSettings> {
         user: settings.lastfmUsername,
         period: settings.displayPeriod,
         api_key: settings.lastfmApiKey,
+        limit: '5',
       }),
     );
-    const artist = response.topartists.artist[0];
+    const artist = getPositionedItem(response.topartists.artist, settings.position);
     if (artist === undefined) {
-      throw new Error('Last.fm returned no top artists');
+      throw new Error(`Last.fm returned no top artist at position ${settings.position}`);
     }
 
-    this.plugin.setTitle(settings.titleDisplay === 'total-scrobbles' ? artist.playcount : artist.name, context);
+    this.setItemUrl(context, artist.url);
+
+    const titles: Record<string, string> = {
+      artist: artist.name,
+      'artist-scrobbles': `${artist.name}\n${artist.playcount}`,
+      'total-scrobbles': artist.playcount,
+      username: settings.lastfmUsername,
+    };
+    this.plugin.setTitle(titles[settings.titleDisplay] ?? artist.name, context);
 
     const image = await getArtistImage(artist.name, artist.mbid);
     this.plugin.setImage(image ? await cropImageToSquare(image) : '', context);

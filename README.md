@@ -126,14 +126,29 @@ You're welcome to use parts of the site for your own projects, but please don't 
 
 There is additional documentation in `docs/README.md` for this.
 
-## Future Plans
+## Feature Status
 
-- [ ] Adding positions to the widgets would allow users to create a grid of their last 5 tracks, top 5 artists, etc. This would be a nice feature to add, but would require the API to be called multiple times for each widget, which would be a lot of requests. This could be solved by adding a cache, but that would be a lot of work for a small feature.
-- [ ] Originally intended on adding a "love track", which would love the track on Last.fm (something I personally don't utilise as it requires going out of your way). The Last.fm API doesn't allow you to check if a track is loved or not - and I really wanted to have it toggle. Would also benefit from a cache so we're not calling recentlyplayed * actionsvisible times per polling period.
-- [ ] Easy access to scrobbling (perhaps with a 3rd party app), so you can manually enter those pesky vinyl scrobbles.
-- [ ] More labels in the future including adding the username, etc.
-- [ ] Configurable onpress actions, such as opening the track, profile, etc... instead of just forced refreshing. In an ideal world - I'd like it to force refresh on hold for x seconds, and configurable for the short press.
-- [ ] Adding playstats for artists to see how many times they've been scrobbled, etc.
-- [ ] Gallery widget to fade between top tracks, etc.
+### Implemented
+
+- [x] 🟢 Persist and apply default settings when an action is first configured.
+- [x] 🟢 Select positions 1–5 for recent tracks, top tracks, top albums, and top artists without additional list requests.
+- [x] 🟢 Additional curated labels, including usernames and combined item/play-count labels.
+- [x] 🟢 Configurable press actions: refresh, open the displayed item, open the user profile, or do nothing.
+- [x] 🟢 Display artist play counts, including a combined artist and play-count label.
+- [x] 🟢 Share identical JSON responses for five seconds, with in-flight request deduplication and a strict 32-entry memory limit.
+
+### Review Later
+
+- 🟡 Rotate locally through the Top 3 or Top 5 results without animated fading or additional list requests.
+- 🟡 Add long-press refresh only when the normal press action is configured to do something else.
+
+### Removal Candidates
+
+- 🔴 Add a love/unlove toggle. This requires Last.fm authentication, signed write requests, session storage, and reauthentication.
+- 🔴 Add native manual scrobbling. This requires the same authentication system plus timestamp entry, validation, and detailed error handling.
+- 🔴 Add a third-party manual-scrobbler shortcut. This would depend on an external service remaining available and retaining compatible URLs.
+- 🔴 Add animated gallery fades. This would introduce extra rendering work, image preloading, and device-dependent timers.
+- 🔴 Add free-form label templates. Curated labels avoid validation and formatting edge cases.
+- 🔴 Add arbitrary custom URLs. Preset actions avoid unnecessary validation and unsafe or broken destinations.
 
 Love to hear your ideas, please submit in the issues tab to discuss.
